@@ -1,18 +1,18 @@
 pub struct Address {
-    readable: String,
+    readable_name: String,
     coordinates: Coordinates,
 }
 
 impl Address {
-    pub fn new(readable: String, coordinates: Coordinates) -> Self {
+    pub fn new(readable_name: String, coordinates: Coordinates) -> Self {
         Self {
-            readable,
+            readable_name,
             coordinates,
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Coordinates {
     longitude: f32,
     latitude: f32,
@@ -72,7 +72,7 @@ mod test {
     }
 
     #[test]
-    pub fn create_coordinates() {
+    pub fn create_address() {
         let longitude = 45.158715;
         let latitude = -57.84721897;
         let coordinates = Coordinates::new(longitude, latitude);
@@ -82,5 +82,9 @@ mod test {
 
         assert_eq!(coordinates.latitude, latitude);
         assert_eq!(coordinates.longitude, longitude);
+
+        let address = Address::new("my_address".to_string(), coordinates.clone());
+        assert_eq!("my_address".to_string(), address.readable_name);
+        assert_eq!(coordinates, address.coordinates);
     }
 }

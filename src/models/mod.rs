@@ -1,7 +1,6 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-pub mod address;
 pub mod office;
 pub mod user;
 

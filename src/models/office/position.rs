@@ -1,3 +1,5 @@
+use super::Surface;
+
 pub const POSITION_PRICE_MIN_IN_CENTS: u32 = 300;
 pub const POSITION_PRICE_MAX_IN_CENTS: u32 = 800;
 
@@ -26,6 +28,58 @@ impl PositionPrice {
 pub enum PositionPriceError {
     #[error("Position price should be between {} and {}", (POSITION_PRICE_MIN_IN_CENTS as f32) / 100.0, (POSITION_PRICE_MAX_IN_CENTS as f32) / 100.0)]
     OutOfBounds,
+}
+
+pub const AVAILABLE_POSITIONS_MIN: u16 = 40;
+pub const AVAILABLE_POSITIONS_MAX: u16 = 180;
+
+#[derive(Eq, PartialEq, Debug)]
+pub struct AvailablePositions(u16);
+
+impl AvailablePositions {
+    pub fn new(
+        available_positions: u16,
+        surface: &Surface,
+    ) -> Result<Self, AvailablePositionsError> {
+        use AvailablePositionsError::*;
+
+        if available_positions < AVAILABLE_POSITIONS_MIN
+            || available_positions > AVAILABLE_POSITIONS_MAX
+        {
+            return Err(OutOfBounds);
+        }
+
+        let positions_constraints = surface.get_positions_constraints();
+
+        let positions_batch_count = (surface.to_square_meters() as f32
+            / positions_constraints.per_square_meter as f32)
+            .floor() as u16;
+
+        let max_positions_for_given_surface =
+            positions_batch_count * positions_constraints.positions as u16;
+
+        if max_positions_for_given_surface > available_positions {
+            return Err(TooBigForGivenSurface {
+                max_positions_for_given_surface,
+            });
+        }
+
+        Ok(Self(available_positions))
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AvailablePositionsError {
+    #[error(
+        "There should be at least {AVAILABLE_POSITIONS_MIN} and at most {AVAILABLE_POSITIONS_MAX} available positions"
+    )]
+    OutOfBounds,
+    #[error(
+        "With the given surface, the max positions count is {max_positions_for_given_surface}"
+    )]
+    TooBigForGivenSurface {
+        max_positions_for_given_surface: u16,
+    },
 }
 
 #[cfg(test)]

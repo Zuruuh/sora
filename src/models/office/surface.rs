@@ -1,5 +1,5 @@
 #[derive(Eq, PartialEq, Debug)]
-pub struct Surface(u16);
+pub struct Surface(pub(self) u16);
 
 impl Surface {
     pub fn from_square_meters(square_meters: u16) -> Self {

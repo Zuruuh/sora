@@ -1,0 +1,45 @@
+L’exercice consiste a mettre en place un modele de division de bureau. On appelle une personne possédant un espace de bureau un host, et une personne occupant un bureau un guest; pour simplification un utilisateur ne sera que host ou guest.  Un espace de Bureau sera appelé RentalSpace, une subdivision un Split. L’exercice porte sur une periode allant du 01/01/2024 au 01/01/2026.
+
+Le livrable comprendra le code écrit soit en Rust soit en Python, Le conde devra être organisé de maniere logique dans  et accompagné d’un README permettant d’avoir les instructions pour l’executer et le tester. Toutes les structures de donnés et attributs seront en Anglais
+
+On considere qu’un espace de bureau est composé de
+
+- un uuid : au sens classique de l’uuid , mais préfixé par "ofc". Par exemple “ofc-22795DC7-E972-44D7-A74B-553EA6589044”
+- une date de création dans le système (created_at)
+- un nom : il peut etre simplement “Bureau 1 a bureau N”
+- une adresse dont le format comprendra a la fois une adresse humainement lisible ainsi qu'une latitude /longitude
+- une surface
+- un nombre de postes qui sera toujours supérieur à 40 et inférieur a 180
+- un prix par poste par mois entre 300 et 800 euros .
+- un bureau parent (plus d’explication en dessous)
+- une reference a un propriétaire
+
+Un bureau n’est valide que s’il respecte une règle de surface par poste qui depend du nombre de poste globales:
+- on ne peut pas avoir plus de 5 postes pour 8m2 pour moins de 60 postes et 5 postes pour 7 m2 pour plus de 60 postes
+
+Parallèlement on considère qu’une personne sur la plateforme est composée de
+- un uuid : au sens classique de l’UUID et préfixe par usr, par exemple “usr-22795DC7-E972-44D7-A74B-553EA6589044”
+- une date de création dans le système
+- un nom et un prénom
+- un ensemble de bureau dont il est ou a été Host
+- un ensemble de bureau dont il est ou a ete Guest
+
+On ajoute a cela les éléments suivants:
+- Un bureau peut être subdivisé en espaces plus petits :une subdivision suit les règles du bureau. Le nombre de poste est supérieur a 40 et inférieur a 180. Le regle de surface est respecté
+- Un bureau issu d’une subdivision a pour parent le bureau original.
+- Une subdivision possède aussi un UUID (prefix "spl", “spl-22795DC7-E972-44D7-A74B-553EA6589044”)) et une date de création.
+
+Un contrat représente une location d’un bureau entre un guest et un host. Il porte sur une période minimum de 4 mois et a pour caractéristiques:
+- Un UUID (prefix "agr", “agr-22795DC7-E972-44D7-A74B-553EA6589044”  une date de création
+- un host un guest, un bureau (Subdivisé ou non)
+- un montant au mois
+
+L’exercice consiste simplement en une modélisation et une manipulation de ces objets et en l’écriture d’un outil en ligne de commande permettant cette manipulation.
+1) Proposer une modélisation des éléments en question sous forme de structure ou d’objet. Chaque objet dérivera d’un object de Base ayant un UUID et une date de création
+2) Proposer une commande pour l’outil en ligne de commande permettant de créer un ensemble d’objects de base (entre 3 et 5 bureaux et entre 2 et 6 users, host ou guest). L’outil doit permettre
+	- de lister tous les objets dans la console
+	- de lister tous les objets d’une catégorie d’objet dans la console
+	- d’afficher un objet spécifique dans la console
+3) De créer et afficher une simulation de location des bureaux sur une période de 2 ans, avec une option autorisant le split de bureaux ou non. LA seule condition a une simulation est que chaque guest doit être capable d’occuper un bureau 12 mois (pas forcément consécutif sur les 2 ans). Aucune optimisation n’est recherchée, simplement la proposition d’un scenario répondant a cette contrainte des 12 mois. Si aucun scenario n’est possible l’outil doit y répondre.
+
+Vu sa complexité cet énoncé peut avoir des zones de flous et et cas non parfaitement définis. Mais comme dans tout problème informatique il appartient au développeur de faire des choix.

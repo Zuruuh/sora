@@ -5,7 +5,6 @@ pub mod surface;
 
 pub use address::*;
 pub use position::*;
-pub use subdivision::*;
 pub use surface::*;
 
 use std::fmt::Display;

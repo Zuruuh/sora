@@ -32,11 +32,11 @@ pub struct User {
 }
 
 impl Object for User {
-    fn get_id<'a>(&'a self) -> &'a Uuid {
+    fn get_id(&self) -> &Uuid {
         &self.id.0
     }
 
-    fn get_created_at<'a>(&'a self) -> &'a DateTime<Utc> {
+    fn get_created_at(&self) -> &DateTime<Utc> {
         &self.created_at
     }
 }

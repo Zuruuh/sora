@@ -1,4 +1,4 @@
-use super::Surface;
+use super::{surface, Surface};
 
 pub const POSITION_PRICE_MIN_IN_CENTS: u32 = 300;
 pub const POSITION_PRICE_MAX_IN_CENTS: u32 = 800;
@@ -63,12 +63,16 @@ pub const AVAILABLE_POSITIONS_MIN: u16 = 40;
 pub const AVAILABLE_POSITIONS_MAX: u16 = 180;
 
 #[derive(Eq, PartialEq, Debug)]
-pub struct AvailablePositions(pub(self) u16);
+pub struct AvailablePositions {
+    pub(self) available_positions: u16,
+    // Extract the surface here to ensure the available positions
+    pub(self) surface: Surface,
+}
 
 impl AvailablePositions {
     pub fn new(
         available_positions: u16,
-        surface: &Surface,
+        surface: Surface,
     ) -> Result<Self, AvailablePositionsError> {
         use AvailablePositionsError::*;
 
@@ -93,7 +97,18 @@ impl AvailablePositions {
             });
         }
 
-        Ok(Self(available_positions))
+        Ok(Self {
+            available_positions,
+            surface,
+        })
+    }
+
+    pub fn get_surface(&self) -> &Surface {
+        &self.surface
+    }
+
+    pub fn get_available_positions(&self) -> u16 {
+        self.available_positions
     }
 }
 
@@ -121,7 +136,7 @@ mod available_position_tests {
     #[case(181)]
     pub fn with_out_of_bounds_count(#[case] available_positions: u16) {
         let positions =
-            AvailablePositions::new(available_positions, &Surface::from_square_meters(40));
+            AvailablePositions::new(available_positions, Surface::from_square_meters(40));
 
         assert_eq!(Err(OutOfBounds), positions);
     }
@@ -135,7 +150,7 @@ mod available_position_tests {
         #[case] maximum_positions: u16,
     ) {
         let positions =
-            AvailablePositions::new(available_positions, &Surface::from_square_meters(surface));
+            AvailablePositions::new(available_positions, Surface::from_square_meters(surface));
 
         assert_eq!(
             Err(TooBigForGivenSurface {
@@ -149,9 +164,15 @@ mod available_position_tests {
     #[case(105, 150)]
     #[case(50, 75)]
     pub fn with_valid_positions(#[case] available_positions: u16, #[case] surface: u16) {
-        let positions =
-            AvailablePositions::new(available_positions, &Surface::from_square_meters(surface));
+        let surface = Surface::from_square_meters(surface);
+        let positions = AvailablePositions::new(available_positions, surface.clone());
 
-        assert_eq!(Ok(AvailablePositions(available_positions)), positions);
+        assert_eq!(
+            Ok(AvailablePositions {
+                available_positions,
+                surface
+            }),
+            positions
+        );
     }
 }

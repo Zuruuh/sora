@@ -1,9 +1,11 @@
 pub mod address;
 pub mod position;
+pub mod subdivision;
 pub mod surface;
 
 pub use address::*;
 pub use position::*;
+pub use subdivision::*;
 pub use surface::*;
 
 use std::fmt::Display;
@@ -34,12 +36,8 @@ pub struct Office {
     name: String,
     address: Address,
     owner: UserId,
-    surface: Surface,
     available_positions: AvailablePositions,
     position_price_per_month: PositionPrice,
-    // Using IDs here instead of a Box<Self> ensure better memory usage
-    // since we don't have to use the heap
-    parent_office: Option<OfficeId>,
 }
 
 impl Office {
@@ -47,10 +45,8 @@ impl Office {
         name: String,
         address: Address,
         owner: UserId,
-        surface: Surface,
         available_positions: AvailablePositions,
         position_price_per_month: PositionPrice,
-        parent_office: Option<OfficeId>,
     ) -> Self {
         Self {
             id: OfficeId::new(),
@@ -58,10 +54,8 @@ impl Office {
             name,
             address,
             owner,
-            surface,
             available_positions,
             position_price_per_month,
-            parent_office,
         }
     }
 }

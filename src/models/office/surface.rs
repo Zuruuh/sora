@@ -1,4 +1,4 @@
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Surface(pub(self) u16);
 
 impl Surface {

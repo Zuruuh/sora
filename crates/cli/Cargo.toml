@@ -5,10 +5,11 @@ edition = "2021"
 
 [dependencies]
 chrono = { workspace = true }
-sora_core = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
+color-eyre = { workspace = true }
+sora_core = { workspace = true }
+sqlx = { workspace = true, features = ["postgres", "uuid", "runtime-tokio"] }
 tokio = { workspace = true, features = ["full"] }
-sqlx = { workspace = true, features = ["sqlite"] }
 
 [dev-dependencies]
 rstest = { workspace = true }

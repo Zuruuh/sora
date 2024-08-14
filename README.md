@@ -3,6 +3,12 @@
 - Rust 1.80.0 stable (install with `rustup toolchain install stable`)
 - [`cargo-tarpaulin`](https://github.com/xd009642/tarpaulin) (Code coverage
   reporter, install with `cargo install cargo-tarpaulin`)
+- A containerization tool supporting the compose spec
+  ([`podman compose`](https://github.com/containers/podman-compose) or
+  [`docker compose`](https://github.com/docker/compose) for example)
+- For development, it is recommended to use the
+  [`sqlx cli`](https://crates.io/crates/sqlx-cli) (install with
+  `cargo install sqlx-cli`)
 
 ## Dependencies
 
@@ -98,6 +104,9 @@ pub struct PositionPrice(u32);
 
 # Running the project
 
+First, start the database container with `podman compose up` or
+`docker compose up`
+
 **todo add cli examples here**
 
 # Testing
@@ -130,5 +139,6 @@ approach in a fast-paced environment.
 
 # Storage
 
-Dead simple sqlite since it's close to what someone would use in prod. I
-could've used something else but I went with the fast and easy way
+I went with postgresql since I didn't feel the need for an approach other than
+relationnal. A simple docker compose configuration is also provided with the
+project to set it up so it should be easy locally as well.

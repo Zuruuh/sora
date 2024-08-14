@@ -2,10 +2,7 @@ use chrono::{DateTime, Utc};
 use std::fmt::Display;
 use uuid::Uuid;
 
-use super::{
-    office::{Office, OfficeId},
-    Object,
-};
+use super::{office::OfficeId, Object};
 
 pub struct UserId(Uuid);
 

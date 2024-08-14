@@ -6,9 +6,8 @@
 - A containerization tool supporting the compose spec
   ([`podman compose`](https://github.com/containers/podman-compose) or
   [`docker compose`](https://github.com/docker/compose) for example)
-- For development, it is recommended to use the
-  [`sqlx cli`](https://crates.io/crates/sqlx-cli) (install with
-  `cargo install sqlx-cli`)
+- The [`sqlx cli`](https://crates.io/crates/sqlx-cli) (install with
+  `cargo install sqlx-cli`); Necesarry to run database migrations
 
 ## Dependencies
 
@@ -102,10 +101,17 @@ Into something like this:
 pub struct PositionPrice(u32);
 ```
 
-# Running the project
+# Setting up the project
 
-First, start the database container with `podman compose up` or
-`docker compose up`
+```bash
+git clone git@github.com:Zuruuh/sora.git
+cd sora
+docker compose up -d
+sqlx migrate run
+cargo run -- --help
+```
+
+# Examples
 
 **todo add cli examples here**
 

@@ -21,6 +21,50 @@ impl ContractId {
     }
 }
 
+pub struct Contract {
+    id: ContractId,
+    created_at: DateTime<Utc>,
+    host: UserId,
+    guest: UserId,
+    office: ContractOffice,
+    rent: u32,
+    duration: ContractDuration,
+}
+
+pub enum ContractOffice {
+    Office(OfficeId),
+    Subdivision(SubdivisionId),
+}
+
+impl Object for Contract {
+    fn get_id(&self) -> &Uuid {
+        &self.id.0
+    }
+
+    fn get_created_at(&self) -> &DateTime<Utc> {
+        &self.created_at
+    }
+}
+
+impl Contract {
+    pub fn new(
+        host: UserId,
+        guest: UserId,
+        office: ContractOffice,
+        rent: u32,
+        duration: ContractDuration,
+    ) -> Self {
+        Self {
+            id: ContractId::new(),
+            created_at: Utc::now(),
+            host,
+            guest,
+            office,
+            rent,
+            duration,
+        }
+    }
+}
 pub const CONTRACT_DURATION_MINIMUM_DAYS: i64 = 30 * 4;
 
 #[derive(Debug, PartialEq)]
@@ -84,50 +128,5 @@ mod duration_test {
         );
 
         assert_eq!(Err(ContractDurationError::TooShort), duration);
-    }
-}
-
-pub struct Contract {
-    id: ContractId,
-    created_at: DateTime<Utc>,
-    host: UserId,
-    guest: UserId,
-    office: ContractOffice,
-    rent: u32,
-    duration: ContractDuration,
-}
-
-pub enum ContractOffice {
-    Office(OfficeId),
-    Subdivision(SubdivisionId),
-}
-
-impl Object for Contract {
-    fn get_id(&self) -> &Uuid {
-        &self.id.0
-    }
-
-    fn get_created_at(&self) -> &DateTime<Utc> {
-        &self.created_at
-    }
-}
-
-impl Contract {
-    pub fn new(
-        host: UserId,
-        guest: UserId,
-        office: ContractOffice,
-        rent: u32,
-        duration: ContractDuration,
-    ) -> Self {
-        Self {
-            id: ContractId::new(),
-            created_at: Utc::now(),
-            host,
-            guest,
-            office,
-            rent,
-            duration,
-        }
     }
 }

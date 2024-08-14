@@ -7,12 +7,17 @@ use crate::{user::UserId, Object};
 
 use super::{OfficeId, SubdivisionId};
 
-#[derive(Default)]
 pub struct ContractId(Uuid);
 
 impl Display for ContractId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "agr-{}", self.0)
+    }
+}
+
+impl ContractId {
+    pub fn new() -> Self {
+        Self(Uuid::now_v7())
     }
 }
 
@@ -116,7 +121,7 @@ impl Contract {
         duration: ContractDuration,
     ) -> Self {
         Self {
-            id: ContractId::default(),
+            id: ContractId::new(),
             created_at: Utc::now(),
             host,
             guest,

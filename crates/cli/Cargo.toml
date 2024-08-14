@@ -1,0 +1,14 @@
+[package]
+name = "sora_cli"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+chrono = { workspace = true }
+sora_core = { workspace = true }
+clap = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+sqlx = { workspace = true, features = ["sqlite"] }
+
+[dev-dependencies]
+rstest = { workspace = true }

@@ -94,7 +94,6 @@ Into something like this:
     derive(Eq, PartialEq, Debug)
 )]
 pub struct PositionPrice(u32);
-}
 ```
 
 # Running the project
@@ -112,9 +111,10 @@ commands. Additionnaly, you can also generate a code coverage report with
 
 This project is separated into multiple separate `crates`. Apart from the
 obvious decoupling this provides, it helps with compilation time as we have less
-dependencies. This means we can also adapt our models to multiple apps and back
-ends (re-using the same core logic for a graphql back end, a rest api, a cli,
-and a worker fetching excel sheets or whatever)
+dependencies (You can check the dependency tree with the `cargo tree` command).
+This means we can also adapt our models to multiple apps and back ends (re-using
+the same core logic for a graphql back end, a rest api, a cli, and a worker
+fetching excel sheets or whatever)
 
 Also something to note specifically on the domain representation, I have tried
 as much as possible to make invalid states impossible to obtain from another
@@ -124,9 +124,9 @@ don't have to duplicate logic across multiple services and apps, taking the risk
 to create invalid state and breaking other services, but adds some overhead and
 hassle when interacting with the domain (see the subdivision tests at
 `crates/core/office/subdivision.rs::subdivided_available_positions_test`; all
-created objects are garanteed to be valid from a business/domain perspective if
-they are `Ok(_)`). I'd be happy to discuss about the tradeoffs of this approach
-in a fast-paced environment.
+created objects are garanteed to be valid from a business/domain perspective as
+long as they are `Ok(_)`). I'd be happy to discuss about the tradeoffs of this
+approach in a fast-paced environment.
 
 # Storage
 

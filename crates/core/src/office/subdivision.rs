@@ -3,7 +3,7 @@ use std::fmt::Display;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::models::{user::UserId, Object};
+use crate::{user::UserId, Object};
 
 use super::{
     Address, AvailablePositions, AvailablePositionsError, OfficeId, PositionPrice, Surface,
@@ -95,7 +95,7 @@ pub enum SubdividedSurfaceError {
 
 #[cfg(test)]
 mod subdivided_surface_test {
-    use crate::models::office::{
+    use crate::office::{
         subdivision::{SubdividedSurface, SubdividedSurfaceError},
         Surface,
     };
@@ -164,7 +164,7 @@ pub enum SubdividedAvailablePositionsError {
 #[cfg(test)]
 mod subdivided_available_positions_test {
     use super::*;
-    use crate::models::office::{AvailablePositions, Surface, AVAILABLE_POSITIONS_MAX};
+    use crate::office::{AvailablePositions, Surface, AVAILABLE_POSITIONS_MAX};
     use rstest::rstest;
 
     #[rstest]

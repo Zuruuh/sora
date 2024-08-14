@@ -1,13 +1,13 @@
-[package]
-name = "sora"
-version = "0.1.0"
+[workspace]
+resolver = "2"
+members = ["crates/*"]
+
+[workspace.package]
 edition = "2021"
 
-[dependencies]
+[workspace.dependencies]
 chrono = "0.4.38"
-clap = { version = "4.5.13", features = ["derive"] }
+clap = "4.5.13"
 thiserror = "1.0.63"
-uuid = { version = "1.10.0", features = ["v7"] }
-
-[dev-dependencies]
+uuid = "1.10.0"
 rstest = "0.22.0"

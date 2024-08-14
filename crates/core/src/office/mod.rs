@@ -1,10 +1,13 @@
-pub mod address;
-pub mod position;
-pub mod subdivision;
-pub mod surface;
+mod address;
+mod contract;
+mod position;
+mod subdivision;
+mod surface;
 
 pub use address::*;
+pub use contract::*;
 pub use position::*;
+pub use subdivision::*;
 pub use surface::*;
 
 use std::fmt::Display;

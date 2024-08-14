@@ -164,12 +164,16 @@ pub enum SubdividedAvailablePositionsError {
 #[cfg(test)]
 mod subdivided_available_positions_test {
     use super::*;
-    use crate::office::{AvailablePositions, Surface, AVAILABLE_POSITIONS_MAX};
+    use crate::office::{AvailablePositions, Surface};
     use rstest::rstest;
 
     #[rstest]
     #[case(50, 45, SubdividedAvailablePositionsError::CannotBeLargerThanParent)]
-    #[case(41, 80, SubdividedAvailablePositionsError::AvailablePositionsBubbledError(AvailablePositionsError::TooBigForGivenSurface { max_positions_for_given_surface: 25}))]
+    #[case(
+        41,
+        80,
+        SubdividedAvailablePositionsError::AvailablePositionsBubbledError(AvailablePositionsError::TooBigForGivenSurface { max_positions_for_given_surface: 25 })
+    )]
     #[case(
         12,
         85,

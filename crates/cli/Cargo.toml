@@ -8,8 +8,14 @@ chrono = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true }
 sora_core = { workspace = true }
-sqlx = { workspace = true, features = ["postgres", "uuid", "runtime-tokio"] }
-tokio = { workspace = true, features = ["full"] }
+
+[dependencies.tokio]
+workspace = true
+features = ["macros", "rt-multi-thread"]
+
+[dependencies.sqlx]
+workspace = true
+features = ["chrono", "macros", "migrate", "postgres", "runtime-tokio", "uuid"]
 
 [dev-dependencies]
 rstest = { workspace = true }

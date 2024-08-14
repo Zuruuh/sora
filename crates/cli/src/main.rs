@@ -5,6 +5,7 @@
 // sora-cli show --filter="agr-22795DC7-E972-44D7-A74B-553EA6589044"
 // sora-cli simulate ofc-22795DC7-E972-44D7-A74B-553EA6589044
 
+use clap::Parser;
 use sqlx::postgres::PgPool;
 use std::env;
 
@@ -22,5 +23,38 @@ pub async fn main() -> color_eyre::Result<()> {
 
     println!("{value}");
 
+    let CliArguments { subcommand: args } = CliArguments::parse();
+
+    match args {
+        Command::CreateFixtures => {}
+        Command::Simulate { duration } => {}
+        Command::Show { filter } => {}
+    };
+
     Ok(())
+}
+
+#[derive(clap::Parser, Debug)]
+#[command(version)]
+pub struct CliArguments {
+    #[command(subcommand)]
+    subcommand: Command,
+}
+
+#[derive(clap::Subcommand, Debug)]
+pub enum Command {
+    /// Create in-database fixtures
+    CreateFixtures,
+    /// View one or multiple entities
+    Show {
+        #[arg(long, short)]
+        // TODO use a custom enum instead of an Option<String> here
+        filter: Option<String>,
+    },
+    /// Simulate an office rental
+    Simulate {
+        /// Rental duration in months
+        #[arg(long, short, default_value_t = 24)]
+        duration: usize,
+    },
 }

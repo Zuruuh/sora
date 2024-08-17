@@ -9,9 +9,11 @@ edition = "2021"
 chrono = "0.4.38"
 clap = "4.5.13"
 color-eyre = "0.6.3"
-thiserror = "1.0.63"
-tokio = "1.39.2"
+fake = "2.9.2"
+rand = "0.8.5"
 sqlx = { version = "0.8.0", default-features = false }
 sora_core = { version = "*", path = "./crates/core/" }
+thiserror = "1.0.63"
+tokio = "1.39.2"
 uuid = "1.10.0"
 rstest = "0.22.0"

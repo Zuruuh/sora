@@ -9,6 +9,7 @@ use super::{
     Address, AvailablePositions, AvailablePositionsError, OfficeId, PositionPrice, Surface,
 };
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct SubdivisionId(pub(self) Uuid);
 
 impl Display for SubdivisionId {
@@ -23,6 +24,7 @@ impl SubdivisionId {
     }
 }
 
+#[derive(Debug)]
 pub struct OfficeSubdivision {
     id: SubdivisionId,
     created_at: DateTime<Utc>,
@@ -57,7 +59,7 @@ impl OfficeSubdivision {
 }
 
 impl Object for OfficeSubdivision {
-    fn get_id(&self) -> &Uuid {
+    fn get_uuid(&self) -> &Uuid {
         &self.id.0
     }
 
@@ -66,7 +68,7 @@ impl Object for OfficeSubdivision {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SubdividedSurface(pub Surface);
 
 impl SubdividedSurface {

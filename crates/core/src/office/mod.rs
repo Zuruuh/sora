@@ -17,6 +17,7 @@ use uuid::Uuid;
 
 use super::{user::UserId, Object};
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct OfficeId(Uuid);
 
 impl Display for OfficeId {
@@ -31,10 +32,10 @@ impl OfficeId {
     }
 }
 
+#[derive(Debug)]
 pub struct Office {
-    id: OfficeId,
+    pub(crate) id: OfficeId,
     created_at: DateTime<Utc>,
-    // todo add validation maybe ?
     name: String,
     address: Address,
     owner: UserId,
@@ -42,8 +43,30 @@ pub struct Office {
     position_price_per_month: PositionPrice,
 }
 
+impl Object for Office {
+    fn get_uuid(&self) -> &Uuid {
+        &self.id.0
+    }
+
+    fn get_created_at(&self) -> &DateTime<Utc> {
+        &self.created_at
+    }
+}
+
 impl Office {
-    pub fn new(
+    pub fn get_id(&self) -> &OfficeId {
+        &self.id
+    }
+
+    pub fn get_available_positions(&self) -> &AvailablePositions {
+        &self.available_positions
+    }
+
+    pub fn get_position_price_per_month(&self) -> &PositionPrice {
+        &self.position_price_per_month
+    }
+
+    pub(crate) fn new(
         name: String,
         address: Address,
         owner: UserId,
@@ -60,14 +83,37 @@ impl Office {
             position_price_per_month,
         }
     }
+
+    /// `parts` Must be at least 2 elements long
+    pub fn divide(
+        &self,
+        parts: Vec<(SubdividedAvailablePositions, PositionPrice)>,
+    ) -> Result<Vec<OfficeSubdivision>, OfficeDivisionError> {
+        use OfficeDivisionError::*;
+
+        if parts.len() < 2 {
+            return Err(MustBeDividedInAtLeastTwoParts);
+        }
+
+        let mut subdivisions = Vec::new();
+
+        for (available_positions, position_price_per_month) in parts {
+            subdivisions.push(OfficeSubdivision::new(
+                self.name.clone(),
+                self.address.clone(),
+                self.owner,
+                available_positions,
+                position_price_per_month,
+                self.id,
+            ));
+        }
+
+        Ok(subdivisions)
+    }
 }
 
-impl Object for Office {
-    fn get_id(&self) -> &Uuid {
-        &self.id.0
-    }
-
-    fn get_created_at(&self) -> &DateTime<Utc> {
-        &self.created_at
-    }
+#[derive(Debug, thiserror::Error, PartialEq, Eq)]
+pub enum OfficeDivisionError {
+    #[error("An office must be divided in at least two distinct parts")]
+    MustBeDividedInAtLeastTwoParts,
 }

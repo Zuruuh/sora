@@ -37,7 +37,7 @@ pub enum ContractOffice {
 }
 
 impl Object for Contract {
-    fn get_id(&self) -> &Uuid {
+    fn get_uuid(&self) -> &Uuid {
         &self.id.0
     }
 
@@ -47,6 +47,10 @@ impl Object for Contract {
 }
 
 impl Contract {
+    pub fn get_id(&self) -> &ContractId {
+        &self.id
+    }
+
     pub fn new(
         host: UserId,
         guest: UserId,

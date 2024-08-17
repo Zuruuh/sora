@@ -1,9 +1,9 @@
 use super::{surface, Surface};
 
-pub const POSITION_PRICE_MIN_IN_CENTS: u32 = 300;
-pub const POSITION_PRICE_MAX_IN_CENTS: u32 = 800;
+pub const POSITION_PRICE_MIN_IN_CENTS: u32 = 30000;
+pub const POSITION_PRICE_MAX_IN_CENTS: u32 = 80000;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct PositionPrice {
     cents: u32,
 }
@@ -36,8 +36,8 @@ mod price_tests {
     use rstest::rstest;
 
     #[rstest]
-    #[case(250)]
-    #[case(850)]
+    #[case(25000)]
+    #[case(85000)]
     pub fn with_invalid_values(#[case] cents: u32) {
         let price = PositionPrice::from_cents(cents);
 
@@ -45,9 +45,9 @@ mod price_tests {
     }
 
     #[rstest]
-    #[case(300)]
-    #[case(800)]
-    #[case(500)]
+    #[case(30000)]
+    #[case(80000)]
+    #[case(50000)]
     pub fn with_valid_values(#[case] cents: u32) {
         let price = PositionPrice::from_cents(cents);
 
@@ -62,7 +62,7 @@ mod price_tests {
 pub const AVAILABLE_POSITIONS_MIN: u16 = 40;
 pub const AVAILABLE_POSITIONS_MAX: u16 = 180;
 
-#[derive(Eq, PartialEq, Debug)]
+#[derive(Eq, PartialEq, Debug, Clone, Copy)]
 pub struct AvailablePositions {
     pub(self) available_positions: u16,
     // Extract the surface here to ensure the available positions

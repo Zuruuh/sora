@@ -7,6 +7,8 @@ edition = "2021"
 chrono = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true }
+fake = { workspace = true }
+rand = { workspace = true }
 sora_core = { workspace = true }
 
 [dependencies.tokio]

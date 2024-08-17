@@ -1,3 +1,4 @@
+#[derive(Debug, Clone)]
 pub struct Address {
     readable_name: String,
     coordinates: Coordinates,
@@ -27,10 +28,10 @@ impl Coordinates {
 
         match (longitude, latitude) {
             (lon, _) if lon < -LONGITUDE_BOUNDARY || lon > LONGITUDE_BOUNDARY => {
-                Err(LongitudeOutOfBound)
+                Err(LongitudeOutOfBound(lon))
             }
             (_, lat) if lat < -LATITUDE_BOUNDARY || lat > LATITUDE_BOUNDARY => {
-                Err(LatitudeOutOfBound)
+                Err(LatitudeOutOfBound(lat))
             }
             (longitude, latitude) => Ok(Self {
                 longitude,
@@ -40,12 +41,12 @@ impl Coordinates {
     }
 }
 
-#[derive(thiserror::Error, Debug, PartialEq, Eq)]
+#[derive(thiserror::Error, Debug, PartialEq)]
 pub enum CoordinatesError {
-    #[error("Longitude must be between -{LONGITUDE_BOUNDARY} and {LONGITUDE_BOUNDARY}")]
-    LongitudeOutOfBound,
-    #[error("Latitude must be between -{LATITUDE_BOUNDARY} and {LATITUDE_BOUNDARY}")]
-    LatitudeOutOfBound,
+    #[error("Longitude must be between -{LONGITUDE_BOUNDARY} and {LONGITUDE_BOUNDARY}, got {0}")]
+    LongitudeOutOfBound(f32),
+    #[error("Latitude must be between -{LATITUDE_BOUNDARY} and {LATITUDE_BOUNDARY}, got {0}")]
+    LatitudeOutOfBound(f32),
 }
 
 #[cfg(test)]
@@ -59,7 +60,7 @@ mod test {
     pub fn create_coordinates_with_invalid_longitude(#[case] longitude: f32) {
         let coordinates = Coordinates::new(longitude, 45.0);
 
-        assert_eq!(Err(LongitudeOutOfBound), coordinates);
+        assert_eq!(Err(LongitudeOutOfBound(longitude)), coordinates);
     }
 
     #[rstest]
@@ -68,7 +69,7 @@ mod test {
     pub fn create_coordinates_with_invalid_latitude(#[case] latitude: f32) {
         let coordinates = Coordinates::new(45.0, latitude);
 
-        assert_eq!(Err(LatitudeOutOfBound), coordinates);
+        assert_eq!(Err(LatitudeOutOfBound(latitude)), coordinates);
     }
 
     #[test]

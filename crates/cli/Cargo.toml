@@ -7,9 +7,14 @@ edition = "2021"
 chrono = { workspace = true }
 clap = { workspace = true, features = ["derive"] }
 color-eyre = { workspace = true }
+env_logger = { workspace = true }
 fake = { workspace = true }
+futures = { workspace = true }
+log = { workspace = true }
 rand = { workspace = true }
-sora_core = { workspace = true }
+sora_model = { version = "*", path = "../model/" }
+thiserror = { workspace = true }
+uuid = { workspace = true }
 
 [dependencies.tokio]
 workspace = true

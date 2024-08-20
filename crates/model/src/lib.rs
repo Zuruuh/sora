@@ -1,15 +1,17 @@
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
+pub mod contract;
+pub mod id;
 pub mod office;
 pub mod user;
 
 pub trait Object {
-    fn get_uuid(&self) -> &Uuid;
+    fn uuid(&self) -> &Uuid;
 
     fn get_string_id(&self) -> String {
-        self.get_uuid().to_string()
+        self.uuid().to_string()
     }
 
-    fn get_created_at(&self) -> &DateTime<Utc>;
+    fn created_at(&self) -> &DateTime<Utc>;
 }

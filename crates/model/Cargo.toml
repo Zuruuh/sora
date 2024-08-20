@@ -1,10 +1,11 @@
 [package]
-name = "sora_core"
+name = "sora_model"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 chrono = { workspace = true }
+derive-getters = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true, features = ["v7"] }
 

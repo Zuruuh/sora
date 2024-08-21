@@ -1,3 +1,4 @@
+use chrono::{Days, Utc};
 use fake::{
     faker::{address::fr_fr::*, name::fr_fr::*},
     Fake,
@@ -5,6 +6,7 @@ use fake::{
 use persistence::persist_office;
 use rand::{rngs::ThreadRng, seq::SliceRandom, Rng};
 use sora_model::{
+    contract::{Contract, CONTRACT_DURATION_MINIMUM_DAYS},
     id::Identifier,
     office::{Office, OfficeSplit},
     user::User,
@@ -126,6 +128,68 @@ pub async fn create_fixtures(
         log::info!("Created {office_subdivisions_count} office subdivisions");
     }
 
+    log::info!("Creating a fake contract");
+
+    let guest = users.choose(rng).unwrap();
+    let office = offices
+        .into_iter()
+        .rev()
+        .find(|office| office.owner() != guest.id())
+        .unwrap();
+
+    let start = rng
+        .gen_range(CONTRACT_DURATION_MINIMUM_DAYS..(365 * 2 - CONTRACT_DURATION_MINIMUM_DAYS))
+        as u64;
+    let end = start + CONTRACT_DURATION_MINIMUM_DAYS as u64;
+
+    let contract = Contract::new(
+        *office.owner(),
+        *guest.id(),
+        *office.id(),
+        office.position_price() * office.available_positions(),
+        Utc::now()
+            .checked_add_days(Days::new(start))
+            .unwrap()
+            .date_naive(),
+        Utc::now()
+            .checked_add_days(Days::new(end))
+            .unwrap()
+            .date_naive(),
+    )?;
+
+    sqlx::query!(
+        r#"
+    insert into contracts (
+        id,
+        created_at,
+        host_id,
+        guest_id,
+        office_id,
+        rent,
+        start,
+        "end"
+    ) values (
+        $1::uuid,
+        $2::timestamptz,
+        $3::uuid,
+        $4::uuid,
+        $5::uuid,
+        $6::integer,
+        $7::date,
+        $8::date
+    )"#,
+        *contract.uuid(),
+        *contract.created_at(),
+        *contract.host().uuid(),
+        *contract.guest().uuid(),
+        *contract.office().uuid(),
+        (office.available_positions() * office.position_price()) as i64,
+        contract.start(),
+        contract.end(),
+    )
+    .execute(pool)
+    .await?;
+
     Ok(())
 }
 
@@ -144,7 +208,8 @@ mod persistence {
                 created_at,
                 name,
                 address,
-                coordinates,
+                longitude,
+                latitude,
                 owner_id,
                 available_positions,
                 surface,
@@ -155,7 +220,8 @@ mod persistence {
                 $2::timestamptz,
                 $3::varchar,
                 $4::varchar,
-                point($5::float, $6::float),
+                $5::float,
+                $6::float,
                 $7::uuid,
                 $8::integer,
                 $9::integer,

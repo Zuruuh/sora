@@ -1,23 +1,42 @@
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
 use chrono::{DateTime, Utc};
+use uuid::Uuid;
+use validator::{validate_available_positions_for_surface, AvailablePositionsError};
 
 use crate::{id::Identifier, model_id, user::UserId, Object};
+
+mod validator;
 
 model_id!(RealOfficeId, "ofc");
 model_id!(OfficeSplitId, "spl");
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum OfficeId {
-    RealOfficeId(RealOfficeId),
+    RealOffice(RealOfficeId),
     OfficeSplit(OfficeSplitId),
 }
 
 impl Display for OfficeId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            OfficeId::RealOfficeId(id) => id.fmt(f),
-            OfficeId::OfficeSplit(id) => id.fmt(f),
+            OfficeId::RealOffice(id) => write!(f, "{id}"),
+            OfficeId::OfficeSplit(id) => write!(f, "{id}"),
+        }
+    }
+}
+
+impl Debug for OfficeId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self, f)
+    }
+}
+
+impl OfficeId {
+    pub fn uuid(&self) -> &Uuid {
+        match self {
+            OfficeId::RealOffice(id) => id.uuid(),
+            OfficeId::OfficeSplit(id) => id.uuid(),
         }
     }
 }
@@ -59,7 +78,7 @@ impl Office {
             return Err(LongitudeOutOfBounds(longitude));
         }
 
-        if let Some(error) = validate_available_positions_with_surface(available_positions, surface)
+        if let Some(error) = validate_available_positions_for_surface(available_positions, surface)
         {
             return Err(AvailablePositionsError(error));
         }
@@ -69,7 +88,7 @@ impl Office {
         }
 
         Ok(Self {
-            id: OfficeId::RealOfficeId(RealOfficeId::new()),
+            id: OfficeId::RealOffice(RealOfficeId::new()),
             created_at: Utc::now(),
             name,
             address,
@@ -83,13 +102,41 @@ impl Office {
         })
     }
 
+    pub fn new_unchecked(
+        id: OfficeId,
+        created_at: DateTime<Utc>,
+        name: String,
+        address: String,
+        latitude: f32,
+        longitude: f32,
+        owner: UserId,
+        available_positions: usize,
+        surface: usize,
+        position_price: usize,
+        parent_office: Option<RealOfficeId>,
+    ) -> Self {
+        Self {
+            id,
+            created_at,
+            name,
+            address,
+            latitude,
+            longitude,
+            owner,
+            available_positions,
+            surface,
+            position_price,
+            parent_office,
+        }
+    }
+
     /// The sum of `splits[*].available_positions` must be equal to `self.available_positions`
     /// Same for `self.surface`
     pub fn split(&self, splits: Vec<OfficeSplit>) -> Result<Vec<Self>, OfficeSplitError> {
         use OfficeSplitError::*;
 
         let parent_office_id = self
-            .is_real_office()
+            .ensure_is_real_office()
             .map_err(|_| OfficeSubdivisionCannotBeSubdivided)?;
 
         let total_available_positions: usize =
@@ -131,9 +178,9 @@ impl Office {
         Ok(offices)
     }
 
-    fn is_real_office(&self) -> Result<RealOfficeId, ()> {
+    fn ensure_is_real_office(&self) -> Result<RealOfficeId, ()> {
         match self.id {
-            OfficeId::RealOfficeId(id) => Ok(id),
+            OfficeId::RealOffice(id) => Ok(id),
             OfficeId::OfficeSplit(_) => Err(()),
         }
     }
@@ -149,32 +196,6 @@ pub enum OfficeSplitError {
     TotalSurfaceNotMatching { given: usize, expected: usize },
     #[error("The sum of all given available positions ({given}) does not match the expected value ({expected})")]
     TotalAvailablePositionsNotMatching { given: usize, expected: usize },
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-    use rstest::rstest;
-
-    #[rstest]
-    #[case(65, 7)]
-    #[case(122, 7)]
-    #[case(55, 8)]
-    fn test_surface_position_constraints(
-        #[case] surface: usize,
-        #[case] expected_count_per_square_meters: usize,
-    ) {
-        assert_eq!(
-            expected_count_per_square_meters,
-            position_count_constraint_for_surface(surface).per_square_meter
-        );
-    }
-}
-
-#[derive(Debug)]
-pub struct PositionsConstraints {
-    positions: usize,
-    per_square_meter: usize,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -202,6 +223,11 @@ impl OfficeSplit {
         available_positions: usize,
         surface: usize,
     ) -> Result<Self, AvailablePositionsError> {
+        if let Some(error) = validate_available_positions_for_surface(available_positions, surface)
+        {
+            return Err(error);
+        }
+
         Ok(Self {
             available_positions,
             surface,
@@ -209,60 +235,49 @@ impl OfficeSplit {
     }
 }
 
-fn validate_available_positions_with_surface(
-    available_positions: usize,
-    surface: usize,
-) -> Option<AvailablePositionsError> {
-    use AvailablePositionsError::*;
-
-    if available_positions < 40 || available_positions > 180 {
-        return Some(AvailablePositionsOutOfBounds(available_positions));
-    }
-
-    let positions_constraints = position_count_constraint_for_surface(surface);
-
-    let positions_batch_count =
-        (surface as f32 / positions_constraints.per_square_meter as f32).floor() as usize;
-
-    let max_positions_for_given_surface = positions_batch_count * positions_constraints.positions;
-
-    if available_positions > max_positions_for_given_surface {
-        return Some(TooMuchAvailablePositionsForGivenSurface {
-            available_positions,
-            max_positions_for_given_surface,
-        });
-    }
-
-    None
-}
-
-fn position_count_constraint_for_surface(surface: usize) -> PositionsConstraints {
-    PositionsConstraints {
-        positions: 5,
-        per_square_meter: if surface > 60 { 7 } else { 8 },
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum AvailablePositionsError {
-    #[error("Given available positions ({0}) is out of bounds.")]
-    AvailablePositionsOutOfBounds(usize),
-    #[error("Given available positions {available_positions} is greater than the maximum value computed for given surface ({max_positions_for_given_surface}).")]
-    TooMuchAvailablePositionsForGivenSurface {
-        available_positions: usize,
-        max_positions_for_given_surface: usize,
-    },
-}
-
 impl Object for Office {
     fn uuid(&self) -> &uuid::Uuid {
         match &self.id {
-            OfficeId::RealOfficeId(id) => &id.0,
+            OfficeId::RealOffice(id) => &id.0,
             OfficeId::OfficeSplit(id) => &id.0,
         }
     }
 
     fn created_at(&self) -> &DateTime<Utc> {
         &self.created_at
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use rstest::rstest;
+
+    use super::*;
+
+    #[rstest]
+    #[case(-193.61427, 63.272813)]
+    #[case(193.61427, 63.272813)]
+    #[case(123.61427, -93.272813)]
+    #[case(123.61427, 93.272813)]
+    fn test_invalid_coordinates(#[case] longitude: f32, #[case] latitude: f32) {
+        let office = Office::new_real(
+            "yo".to_string(),
+            "10 my address".to_string(),
+            latitude,
+            longitude,
+            UserId::new(),
+            120,
+            500,
+            30000,
+        );
+
+        if let Err(err) = office {
+            assert!(matches!(
+                err,
+                OfficeError::LatitudeOutOfBounds(_) | OfficeError::LongitudeOutOfBounds(_)
+            ));
+        } else {
+            assert!(false);
+        }
     }
 }

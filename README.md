@@ -34,72 +34,9 @@ or [`eyre`](https://crates.io/crates/eyre)
 Same as chrono, golden standard for doing it's thing (so uuid in this case);
 implements all versions of the uuid spec from 1 to 8 and is dead simple to use.
 
-## What I could've used instead
+### [`sqlx`](https://crates.io/crates/sqlx)
 
-And now here are some crates that I could have used for this project, but made
-the choice not to. I'm mostly doing this to explain my mental path to getting to
-were this project is at.
-
-### [`jiff`](https://crates.io/crates/jiff)
-
-New datetime library, created as an alternative to chrono. It is developped by a
-BurntSushi (creator of [ripgrep](https://github.com/BurntSushi/ripgrep),
-maintainer of the [`regex`](https://crates.io/crates/regex) crate). Though it's
-still pretty new, and isn't supported by most libraries, and isn't even stable
-yet so it was pretty clear I wasn't going to use it.
-
-### [`nutype`](https://crates.io/crates/nutype)
-
-Honestly I forgot this one existed until near the end of the project so I didn't
-include, but I would've definitely used it if I had to start over. Nutype allows
-creating
-[_newtype structs_](https://doc.rust-lang.org/rust-by-example/generics/new_types.html)
-really easily. It helps validating inputs in a struct and returning an error
-when necessary. This is done manually right now which is pretty redundant since
-we'll have the same kind of checks in a lot of other places. With nutype, we can
-transform this code:
-
-```rust
-pub const POSITION_PRICE_MIN_IN_CENTS: u32 = 300;
-pub const POSITION_PRICE_MAX_IN_CENTS: u32 = 800;
-
-#[derive(Eq, PartialEq, Debug)]
-pub struct PositionPrice {
-    cents: u32,
-}
-
-impl PositionPrice {
-    pub fn from_cents(cents: u32) -> Result<Self, PositionPriceError> {
-        use PositionPriceError::*;
-
-        if cents < POSITION_PRICE_MIN_IN_CENTS || cents > POSITION_PRICE_MAX_IN_CENTS {
-            return Err(OutOfBounds);
-        }
-
-        Ok(Self { cents })
-    }
-
-    pub fn to_cents(&self) -> u32 {
-        self.cents
-    }
-}
-
-#[derive(thiserror::Error, Debug, PartialEq)]
-pub enum PositionPriceError {
-    #[error("Position price should be between {} and {}", (POSITION_PRICE_MIN_IN_CENTS as f32) / 100.0, (POSITION_PRICE_MAX_IN_CENTS as f32) / 100.0)]
-    OutOfBounds,
-}
-```
-
-Into something like this:
-
-```rust
-#[nutype::nutype(
-    validator(less=POSITION_PRICE_MIN_IN_CENTS ,greater=POSITION_PRICE_MAX_IN_CENTS)
-    derive(Eq, PartialEq, Debug)
-)]
-pub struct PositionPrice(u32);
-```
+Compile-time checked sql queries, also comes with a cli to manage migrations.
 
 # Setting up the project
 
@@ -108,12 +45,32 @@ git clone git@github.com:Zuruuh/sora.git
 cd sora
 docker compose up -d
 sqlx migrate run
+# alternatively, you can run the sql migration manually
+# $ cat migrations/20240814170733_create_default_tables.up.sql migrations/20240821024353_postgres_point_to_plain_float.up.sql | docker compose exec -T database psql -U sora
 cargo run -- --help
 ```
 
 # Examples
 
-**todo add cli examples here**
+The CLI is completely auto-discoverable with the `--help` flags, but here are
+some examples:
+
+```
+cargo run -- --help # display help menu
+cargo run -- create-fixtures --subdivide # create users and offices fixtures, with a subdivided office
+cargo run -- show # show all entities in database
+cargo run -- show --filter users # show all users
+cargo run -- show --filter ofc # show all offices
+cargo run -- show --filter usr-01916fe5-d914-7112-8335-46e6507822af # show the user with the given id
+```
+
+# Usage
+
+First, generate the database fixtures with
+`cargo run -- create-fixtures --subdivide`. Optionnaly, you can inspect the
+generated data with the `cargo run -- show` command.
+
+Then, run the simulation with the `cargo run -- simulate` command.
 
 # Testing
 
@@ -130,18 +87,6 @@ dependencies (You can check the dependency tree with the `cargo tree` command).
 This means we can also adapt our models to multiple apps and back ends (re-using
 the same core logic for a graphql back end, a rest api, a cli, and a worker
 fetching excel sheets or whatever)
-
-Also something to note specifically on the domain representation, I have tried
-as much as possible to make invalid states impossible to obtain from another
-crate. This means the `core` crate will always act as a "source of truth" for
-what is possible and what isn't in our domain. It's good because that means we
-don't have to duplicate logic across multiple services and apps, taking the risk
-to create invalid state and breaking other services, but adds some overhead and
-hassle when interacting with the domain (see the subdivision tests at
-`crates/core/office/subdivision.rs::subdivided_available_positions_test`; all
-created objects are garanteed to be valid from a business/domain perspective as
-long as they are `Ok(_)`). I'd be happy to discuss about the tradeoffs of this
-approach in a fast-paced environment.
 
 # Storage
 

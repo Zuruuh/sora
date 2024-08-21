@@ -33,4 +33,18 @@ impl User {
             last_name,
         }
     }
+
+    pub fn new_unchecked(
+        id: UserId,
+        created_at: DateTime<Utc>,
+        first_name: String,
+        last_name: String,
+    ) -> Self {
+        Self {
+            id,
+            created_at,
+            first_name,
+            last_name,
+        }
+    }
 }

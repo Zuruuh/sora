@@ -60,7 +60,7 @@ pub enum Command {
         #[arg(long, short)]
         filter: Option<String>,
     },
-    /// Simulate an office rental
+    /// Simulate rentals for all the offices in database
     Simulate {
         /*
                 /// Rental duration in months

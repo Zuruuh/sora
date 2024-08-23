@@ -1,0 +1,21 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n    insert into contracts (\n        id,\n        created_at,\n        host_id,\n        guest_id,\n        office_id,\n        rent,\n        start,\n        \"end\"\n    ) values (\n        $1::uuid,\n        $2::timestamptz,\n        $3::uuid,\n        $4::uuid,\n        $5::uuid,\n        $6::integer,\n        $7::date,\n        $8::date\n    )",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Int4",
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e9130ed885323fef6f5b9d442c0124f0cbeec8b199c74ef0c7c69be14192b0de"
+}

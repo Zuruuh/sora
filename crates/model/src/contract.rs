@@ -46,7 +46,9 @@ impl Contract {
         let contract_length = end.signed_duration_since(start).num_days();
 
         if CONTRACT_DURATION_MINIMUM_DAYS as i64 > contract_length {
-            return Err(TooShort);
+            return Err(TooShort {
+                days: contract_length,
+            });
         }
 
         Ok(Self {
@@ -108,8 +110,8 @@ pub const CONTRACT_DURATION_MINIMUM_DAYS: usize = 30 * 4;
 
 #[derive(Debug, thiserror::Error, PartialEq)]
 pub enum ContractError {
-    #[error("A contract must last at least {CONTRACT_DURATION_MINIMUM_DAYS} days")]
-    TooShort,
+    #[error("A contract must last at least {CONTRACT_DURATION_MINIMUM_DAYS} days, but tried to create one with {days} days")]
+    TooShort { days: i64 },
 }
 
 #[cfg(test)]

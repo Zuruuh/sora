@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "truncate table contracts, offices, users",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "9c772608a753b1ffa2ca20724843020b5e6798ef6582f0882af2ded2f7fd0cdd"
+}

@@ -1,0 +1,71 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        select *,\n        exists(\n            select id from offices where id = contracts.office_id\n        ) as is_split_office \n        from contracts\n        where start >= $1::date AND \"end\" <= $2::date\n        order by start asc",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "host_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "guest_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "office_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "rent",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "start",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 7,
+        "name": "end",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 8,
+        "name": "is_split_office",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Date",
+        "Date"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      null
+    ]
+  },
+  "hash": "dda9ce927f2afb4f03e8eeb42e647abb350a1785b620af502cf3974bfd98286b"
+}

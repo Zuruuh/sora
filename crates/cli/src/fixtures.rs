@@ -130,12 +130,20 @@ pub async fn create_fixtures(
 
     log::info!("Creating a fake contract");
 
-    let guest = users.choose(rng).unwrap();
-    let office = offices
-        .into_iter()
-        .rev()
-        .find(|office| office.owner() != guest.id())
-        .unwrap();
+    let (guest, office) = {
+        loop {
+            let guest = users.choose(rng).unwrap();
+
+            let office = offices
+                .iter()
+                .rev()
+                .find(|office| office.owner() != guest.id());
+
+            if let Some(office) = office {
+                break (guest, office);
+            }
+        }
+    };
 
     let start = rng
         .gen_range(CONTRACT_DURATION_MINIMUM_DAYS..(365 * 2 - CONTRACT_DURATION_MINIMUM_DAYS))

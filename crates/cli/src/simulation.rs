@@ -1,14 +1,14 @@
-use std::{any::Any, collections::VecDeque, u32};
+use std::ops::Deref;
 
 use chrono::{Days, Months, NaiveDate, Utc};
 use sora_model::{
-    contract::{self, Contract, ContractId, CONTRACT_DURATION_MINIMUM_DAYS},
+    contract::{Contract, ContractError, ContractId, CONTRACT_DURATION_MINIMUM_DAYS},
     office::{Office, OfficeId, OfficeSplitId, RealOfficeId},
     user::{User, UserId},
 };
 use sqlx::PgPool;
 
-use crate::range::DateRange;
+use crate::range::{invert_ranges_in_boundary, DateRange};
 
 pub async fn simulate(duration_in_months: usize, pool: &PgPool) -> color_eyre::Result<()> {
     let simulation = Simulation {
@@ -94,13 +94,36 @@ pub async fn simulate(duration_in_months: usize, pool: &PgPool) -> color_eyre::R
     })
     .collect::<Vec<_>>();
 
-    let contracts = simulation.simulate(
-        &mut users.iter().collect(),
-        offices.iter().collect(),
-        contracts,
-    )?;
+    let contracts =
+        simulation.simulate(users.iter().collect(), offices.iter().collect(), contracts)?;
 
+    println!("Simulation done, printing best solution found:");
+    println!("Displaying informations for offices");
+    println!("");
+
+    for office in offices {
+        let office_contracts = contracts
+            .iter()
+            .filter(|contract| contract.office() == office.id())
+            .collect::<Vec<_>>();
+
+        println!("Office {}:", office.id());
+        for contract in office_contracts {
+            println!(
+                "> From {} to {} ({} days), office will be occupied by {} with contract {}",
+                contract.start(),
+                contract.end(),
+                (*contract.end() - *contract.start()).num_days(),
+                contract.guest(),
+                contract.id()
+            );
+        }
+        println!("");
+    }
+
+    println!("============================");
     println!("Displaying user informations:");
+    println!("");
 
     for user in users {
         let user_contracts = contracts
@@ -130,28 +153,15 @@ pub async fn simulate(duration_in_months: usize, pool: &PgPool) -> color_eyre::R
                 contract.end(),
                 (*contract.end() - *contract.start()).num_days()
             );
-        }
-    }
 
-    println!("============================");
-    println!("Displaying informations for offices:");
-
-    for office in offices {
-        let office_contracts = contracts
-            .iter()
-            .filter(|contract| contract.office() == office.id())
-            .collect::<Vec<_>>();
-
-        println!("Office {}:", office.id());
-        for contract in office_contracts {
             println!(
-                "> From {} to {} ({} days), office will be occupied by {}",
-                contract.start(),
-                contract.end(),
-                (*contract.end() - *contract.start()).num_days(),
-                contract.guest()
+                "> The rent for said office is of {}€/month, user will be paying a total of {}€ for the contract duration", 
+                *contract.rent() as f32 / 100.0,
+                (*contract.rent() as f32 * ((*contract.end() - *contract.start()).num_weeks() as f32 / 7.0)) / 100.0
             );
         }
+
+        println!("");
     }
 
     Ok(())
@@ -166,166 +176,122 @@ pub struct Simulation {
 impl Simulation {
     fn simulate(
         &self,
-        users: &mut VecDeque<&User>,
+        users: Vec<&User>,
         offices: Vec<&Office>,
         contracts: Vec<Contract>,
-    ) -> Result<Vec<Contract>, SimulationError> {
-        let user = match users.front() {
-            Some(user) => user,
-            None => return Ok(contracts),
-        };
+    ) -> Result<Vec<Contract>, ContractError> {
+        let mut contracts = contracts;
 
-        let user_unavailable_ranges = contracts
-            .iter()
-            .filter(|contract| contract.guest() == user.id())
-            .map(|contract| DateRange::new(*contract.start(), *contract.end()))
-            .collect::<Vec<_>>();
-
-        let user_ranges_to_fill =
-            invert_ranges_in_boundary(user_unavailable_ranges.iter(), self.start, self.end);
-
-        let office_candidates = offices
-            .iter()
-            .filter(|office| office.owner() != user.id())
-            .collect::<Vec<_>>();
-
-        let user_total_office_days = user_unavailable_ranges
-            .iter()
-            .map(|range| (range.end - range.start).num_days())
-            .sum::<i64>() as usize;
-
-        let user_missing_office_days = (self.target_days_in_office - user_total_office_days)
-            .max(CONTRACT_DURATION_MINIMUM_DAYS);
-
-        log::info!("User {} has {user_total_office_days}/{} days of locked office, which means we still need to lock at least {user_missing_office_days} days!", user.id(), self.target_days_in_office);
-
-        for office_candidate in office_candidates {
-            let contracts_for_office = contracts
+        'users: for user in users {
+            let user_unavailable_ranges = contracts
                 .iter()
-                .filter(|contract| contract.office() == office_candidate.id())
+                .filter(|contract| contract.guest() == user.id())
+                .map(DateRange::from)
                 .collect::<Vec<_>>();
 
-            let office_unavailabilities = contracts_for_office
+            let user_ranges_to_fill =
+                invert_ranges_in_boundary(user_unavailable_ranges.iter(), self.start, self.end);
+
+            let office_candidates = offices
                 .iter()
-                .map(|contract| DateRange::new(*contract.start(), *contract.end()))
+                .filter(|office| office.owner() != user.id())
                 .collect::<Vec<_>>();
 
-            let office_availabilities =
-                invert_ranges_in_boundary(office_unavailabilities.iter(), self.start, self.end);
+            let user_total_office_days = user_unavailable_ranges
+                .iter()
+                .map(|range| (range.end - range.start).num_days())
+                .sum::<i64>() as usize;
 
-            for user_availability in user_ranges_to_fill.iter() {
-                // If user availability is completely contained in this office unavailability
-                // go to next user availability
-                if office_unavailabilities.iter().any(|office_unavailability| {
-                    user_availability.is_contained_in(office_unavailability)
-                }) {
-                    continue;
-                }
+            let user_missing_office_days = (self.target_days_in_office - user_total_office_days)
+                .max(CONTRACT_DURATION_MINIMUM_DAYS);
 
-                let end = user_availability
-                    .start
-                    .checked_add_days(Days::new(user_missing_office_days as u64))
-                    .unwrap()
-                    .min(user_availability.end);
+            log::info!("User {} has {user_total_office_days}/{} days of locked office, which means we still need to lock at least {user_missing_office_days} days!", user.id(), self.target_days_in_office);
 
-                log::info!(
-                    "> Trying to lock office {} from {} to {} for user {}",
-                    office_candidate.id(),
-                    user_availability.start,
-                    end,
-                    user.id()
-                );
+            for office_candidate in office_candidates {
+                'user_availability: for user_availability in user_ranges_to_fill.iter() {
+                    let contracts_for_office = contracts
+                        .iter()
+                        .filter(|contract| contract.office() == office_candidate.id())
+                        .collect::<Vec<_>>();
 
-                let contract = Contract::for_office(
-                    office_candidate,
-                    *user.id(),
-                    user_availability.start,
-                    end,
-                )
-                .unwrap();
+                    let office_unavailabilities = contracts_for_office
+                        .iter()
+                        .map(Deref::deref)
+                        .map(DateRange::from)
+                        .collect::<Vec<_>>();
 
-                let missing_days =
-                    user_missing_office_days as i64 - (end - user_availability.start).num_days();
-
-                if missing_days <= 0 {
-                    log::info!(
-                        "User {} has locked all necessary days, switching to next user",
-                        user.id()
+                    let office_availabilities = invert_ranges_in_boundary(
+                        office_unavailabilities.iter(),
+                        self.start,
+                        self.end,
                     );
-                    users.pop_front();
+
+                    // The 3 vars above should be recalculated every time a new contract is added
+                    // but for simplicity we'll just recalculate them on each loop
+
+                    for office_availability in office_availabilities.iter() {
+                        let overlap_start = user_availability.start.max(office_availability.start);
+                        let overlap_end = user_availability.end.min(office_availability.end);
+                        // dbg!(&overlap_start, overlap_end);
+
+                        if overlap_start < overlap_end {
+                            let contract_end = overlap_start
+                                .checked_add_days(Days::new(user_missing_office_days as u64))
+                                .unwrap()
+                                .min(overlap_end);
+
+                            log::info!(
+                                "> Trying to lock office {} from {} to {} for user {}",
+                                office_candidate.id(),
+                                overlap_start,
+                                contract_end,
+                                user.id()
+                            );
+
+                            let contract = match Contract::for_office(
+                                office_candidate,
+                                *user.id(),
+                                overlap_start,
+                                contract_end,
+                            ) {
+                                Ok(contract) => contract,
+                                Err(err) => {
+                                    log::error!("Tried to create a contract but failed ({err}). Skipping to next scenario");
+
+                                    continue;
+                                }
+                            };
+
+                            let days_locked = (contract_end - overlap_start).num_days() as usize;
+                            let user_missing_office_days =
+                                user_missing_office_days.saturating_sub(days_locked);
+
+                            contracts.push(contract);
+
+                            if user_missing_office_days == 0 {
+                                log::info!(
+                                    "User {} has locked all necessary days, switching to next user",
+                                    user.id()
+                                );
+
+                                continue 'users;
+                            }
+
+                            continue 'user_availability;
+                        }
+                    }
+
+                    if user_missing_office_days > 0 {
+                        log::info!(
+                            "User {} still needs to lock {} more days",
+                            user.id(),
+                            user_missing_office_days
+                        );
+                    }
                 }
-
-                let mut contracts = contracts;
-                contracts.push(contract);
-
-                return self.simulate(users, offices, contracts);
             }
-
-            // for office_unavailable_range in office_unavailable_ranges {
-            //     if let Some(range) = user_ranges_to_fill.iter().find(|user_unavailability| {
-            //         user_unavailability.overlap(&office_unavailable_range)
-            //     }) {
-            //         dbg!(range);
-            //     }
-            // }
         }
 
-        todo!()
+        Ok(contracts)
     }
-}
-
-fn invert_ranges_in_boundary<'date_range, Iter>(
-    ranges: Iter,
-    start: NaiveDate,
-    end: NaiveDate,
-) -> VecDeque<DateRange>
-where
-    Iter: Clone + IntoIterator<Item = &'date_range DateRange>,
-{
-    let should_map_window = ranges.clone().into_iter().count() > 1;
-    let mut ranges: VecDeque<_> = should_map_window
-        .then(|| {
-            ranges
-                .clone()
-                .into_iter()
-                .map_windows(|&[first, second]| DateRange::new(second.start, first.end))
-                .collect()
-        })
-        .unwrap_or_else(|| {
-            ranges
-                .into_iter()
-                .flat_map(|range| {
-                    [
-                        DateRange::new(start, range.start),
-                        DateRange::new(range.end, end),
-                    ]
-                })
-                .collect()
-        });
-
-    if ranges.is_empty() {
-        ranges.push_back(DateRange::new(start, end));
-
-        return ranges;
-    }
-
-    if let Some(first) = ranges.front() {
-        if (first.start - start).num_days() > CONTRACT_DURATION_MINIMUM_DAYS as i64 {
-            ranges.push_front(DateRange::new(start, first.start));
-        }
-    }
-
-    if let Some(last) = ranges.back() {
-        if (end - last.end).num_days() > CONTRACT_DURATION_MINIMUM_DAYS as i64 {
-            ranges.push_back(DateRange::new(last.end, end));
-        }
-    }
-
-    ranges
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum SimulationError {
-    // #[error("Could not find an office for user {user}")]
-    // NoOfficeAvailableForUser { user: UserId },
 }

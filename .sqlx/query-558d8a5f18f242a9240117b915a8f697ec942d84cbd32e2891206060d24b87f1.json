@@ -1,0 +1,80 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "select * from offices where not exists(select sub.id from offices as sub where sub.parent_office_id = offices.id)",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 2,
+        "name": "name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "address",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "owner_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 5,
+        "name": "available_positions",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "surface",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "position_price",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "parent_office_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 9,
+        "name": "longitude",
+        "type_info": "Float8"
+      },
+      {
+        "ordinal": 10,
+        "name": "latitude",
+        "type_info": "Float8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "558d8a5f18f242a9240117b915a8f697ec942d84cbd32e2891206060d24b87f1"
+}

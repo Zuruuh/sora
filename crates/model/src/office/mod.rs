@@ -70,11 +70,11 @@ impl Office {
     ) -> Result<Self, OfficeError> {
         use OfficeError::*;
 
-        if latitude < -90.0 || latitude > 90.0 {
+        if !(-90.0..90.0).contains(&latitude) {
             return Err(LatitudeOutOfBounds(latitude));
         }
 
-        if longitude < -180.0 || longitude > 180.0 {
+        if !(-180.0..180.0).contains(&longitude) {
             return Err(LongitudeOutOfBounds(longitude));
         }
 
@@ -83,7 +83,7 @@ impl Office {
             return Err(AvailablePositionsError(error));
         }
 
-        if position_price < 30000 || position_price > 80000 {
+        if !(30000..80000).contains(&position_price) {
             return Err(PositionPriceOutOfBounds(position_price));
         }
 

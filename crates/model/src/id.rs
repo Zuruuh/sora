@@ -59,7 +59,7 @@ macro_rules! model_id {
             }
         }
 
-        impl crate::id::Identifier for $model_name {
+        impl $crate::id::Identifier for $model_name {
             fn new() -> Self {
                 Self(uuid::Uuid::now_v7())
             }

@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            insert into offices (\n                id,\n                created_at,\n                name,\n                address,\n                longitude,\n                latitude,\n                owner_id,\n                available_positions,\n                surface,\n                position_price,\n                parent_office_id\n            ) values (\n                $1::uuid,\n                $2::timestamptz,\n                $3::varchar,\n                $4::varchar,\n                $5::float,\n                $6::float,\n                $7::uuid,\n                $8::integer,\n                $9::integer,\n                $10::integer,\n                $11::uuid\n            );\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Varchar",
+        "Varchar",
+        "Float8",
+        "Float8",
+        "Uuid",
+        "Int4",
+        "Int4",
+        "Int4",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7114125e77d9c1796c8bdb97638a9fa0c9b1bacfeec71a46f8e751058de50027"
+}

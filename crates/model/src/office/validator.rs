@@ -4,7 +4,7 @@ pub(super) fn validate_available_positions_for_surface(
 ) -> Option<AvailablePositionsError> {
     use AvailablePositionsError::*;
 
-    if available_positions < 40 || available_positions > 180 {
+    if !(40..180).contains(&available_positions) {
         return Some(AvailablePositionsOutOfBounds(available_positions));
     }
 

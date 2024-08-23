@@ -1,4 +1,4 @@
-# Requirements
+## Requirements
 
 - Rust 1.80.0 stable (install with `rustup toolchain install stable`)
 - [`cargo-tarpaulin`](https://github.com/xd009642/tarpaulin) (Code coverage

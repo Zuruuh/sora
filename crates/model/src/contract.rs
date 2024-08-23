@@ -164,7 +164,7 @@ mod duration_test {
         );
 
         if let Err(err) = contract {
-            assert_eq!(ContractError::TooShort, err);
+            assert!(matches!(err, ContractError::TooShort { .. }));
         } else {
             assert!(false);
         }

@@ -8,9 +8,16 @@ use sora_model::{
 };
 use sqlx::PgPool;
 
-use crate::range::{invert_ranges_in_boundary, DateRange};
+use crate::{
+    persistence,
+    range::{invert_ranges_in_boundary, DateRange},
+};
 
-pub async fn simulate(duration_in_months: usize, pool: &PgPool) -> color_eyre::Result<()> {
+pub async fn simulate(
+    duration_in_months: usize,
+    should_persist: bool,
+    pool: &PgPool,
+) -> color_eyre::Result<()> {
     let simulation = Simulation {
         start: Utc::now().date_naive(),
         end: Utc::now()
@@ -97,6 +104,13 @@ pub async fn simulate(duration_in_months: usize, pool: &PgPool) -> color_eyre::R
     let contracts =
         simulation.simulate(users.iter().collect(), offices.iter().collect(), contracts)?;
 
+    if should_persist {
+        log::info!("Persisting {} contracts to database.", contracts.len());
+        persist(offices.iter().collect(), contracts.iter().collect(), pool).await?;
+    } else {
+        log::info!("Not persisting since the --persist flag wasn't passed");
+    }
+
     println!("Simulation done, printing best solution found:");
     println!("Displaying informations for offices");
     println!("");
@@ -126,10 +140,12 @@ pub async fn simulate(duration_in_months: usize, pool: &PgPool) -> color_eyre::R
     println!("");
 
     for user in users {
-        let user_contracts = contracts
+        let mut user_contracts = contracts
             .iter()
             .filter(|contract| contract.guest() == user.id())
             .collect::<Vec<_>>();
+
+        user_contracts.sort_by(|a, b| a.start().cmp(b.start()));
 
         let total_days_in_office = user_contracts
             .iter()
@@ -205,6 +221,15 @@ impl Simulation {
             let user_missing_office_days = (self.target_days_in_office - user_total_office_days)
                 .max(CONTRACT_DURATION_MINIMUM_DAYS);
 
+            if user_total_office_days >= self.target_days_in_office {
+                log::info!(
+                    "User {} has locked all necessary days, switching to next user",
+                    user.id()
+                );
+
+                continue 'users;
+            }
+
             log::info!("User {} has {user_total_office_days}/{} days of locked office, which means we still need to lock at least {user_missing_office_days} days!", user.id(), self.target_days_in_office);
 
             for office_candidate in office_candidates {
@@ -232,7 +257,6 @@ impl Simulation {
                     for office_availability in office_availabilities.iter() {
                         let overlap_start = user_availability.start.max(office_availability.start);
                         let overlap_end = user_availability.end.min(office_availability.end);
-                        // dbg!(&overlap_start, overlap_end);
 
                         if overlap_start < overlap_end {
                             let contract_end = overlap_start
@@ -294,4 +318,23 @@ impl Simulation {
 
         Ok(contracts)
     }
+}
+
+async fn persist(
+    offices: Vec<&Office>,
+    contracts: Vec<&Contract>,
+    pool: &PgPool,
+) -> Result<(), sqlx::Error> {
+    let mut tx = pool.begin().await?;
+
+    for office in offices {
+        for contract in contracts
+            .iter()
+            .filter(|contract| contract.office() == office.id())
+        {
+            persistence::persist_contract(contract, office, &mut *tx).await?;
+        }
+    }
+
+    tx.commit().await
 }

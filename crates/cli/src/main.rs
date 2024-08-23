@@ -14,7 +14,8 @@ use sqlx::postgres::PgPool;
 use std::env;
 
 mod fixtures;
-pub mod range;
+mod persistence;
+mod range;
 mod show;
 mod simulation;
 
@@ -33,8 +34,10 @@ pub async fn main() -> color_eyre::Result<()> {
 
     match args {
         Command::CreateFixtures { subdivide } => create_fixtures(&pool, &mut rng, subdivide).await,
-        Command::Simulate {/* duration */} => simulate(/*duration*/24, &pool).await,
         Command::Show { filter } => show(&pool, filter).await,
+        Command::Simulate {
+            /* duration */ persist,
+        } => simulate(/*duration*/ 24, persist, &pool).await,
     }
 }
 
@@ -62,6 +65,9 @@ pub enum Command {
     },
     /// Simulate rentals for all the offices in database
     Simulate {
+        /// Should generated contracts be persisted in database
+        #[arg(long, short)]
+        persist: bool,
         /*
                 /// Rental duration in months
                 #[arg(long, short, default_value_t = 24)]
